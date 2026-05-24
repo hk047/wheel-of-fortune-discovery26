@@ -5,21 +5,22 @@ type WheelProps = {
   slices: CitySlice[];
   rotation: number;
   spinState: SpinState;
+  clickerTick: number;
 };
 
 const CENTER = 250;
 const RADIUS = 210;
 
-export function Wheel({ slices, rotation, spinState }: WheelProps) {
+export function Wheel({ slices, rotation, spinState, clickerTick }: WheelProps) {
   const hasSlices = slices.length > 0;
 
   return (
     <div className="wheel-shell" aria-label="City wheel">
       <div className="wheel-crown" />
-      <div className={`pointer ${spinState === 'spinning' ? 'pointer-live' : ''}`}>
+      <div className="pointer">
         <div className="pointer-arm" />
         <div className="pointer-pin" />
-        <div className="pointer-blade" />
+        <div key={clickerTick} className={`pointer-blade ${clickerTick > 0 ? 'pointer-blade-tick' : ''}`} />
       </div>
 
       <motion.svg

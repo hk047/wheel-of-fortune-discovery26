@@ -14,29 +14,44 @@ export async function unlockAudio(): Promise<void> {
   if (context.state === 'suspended') {
     await context.resume();
   }
+  playUnlockTap();
 }
 
-export function playTick(intensity = 0.6): void {
+export function playTick(intensity = 0.6, delaySeconds = 0): void {
   if (muted) return;
   const context = getAudioContext();
-  const now = context.currentTime;
+  if (context.state === 'suspended') {
+    void context.resume();
+  }
+  const now = context.currentTime + delaySeconds;
   const oscillator = context.createOscillator();
+  const body = context.createOscillator();
   const gain = context.createGain();
+  const bodyGain = context.createGain();
   const filter = context.createBiquadFilter();
 
   oscillator.type = 'square';
-  oscillator.frequency.setValueAtTime(900 + intensity * 550, now);
+  oscillator.frequency.setValueAtTime(1250 + intensity * 800, now);
+  body.type = 'triangle';
+  body.frequency.setValueAtTime(260 + intensity * 120, now);
   filter.type = 'highpass';
-  filter.frequency.setValueAtTime(650, now);
+  filter.frequency.setValueAtTime(520, now);
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.06 * intensity, now + 0.006);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+  gain.gain.exponentialRampToValueAtTime(0.16 * intensity, now + 0.004);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.068);
+  bodyGain.gain.setValueAtTime(0.0001, now);
+  bodyGain.gain.exponentialRampToValueAtTime(0.055 * intensity, now + 0.005);
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
 
   oscillator.connect(filter);
   filter.connect(gain);
   gain.connect(context.destination);
+  body.connect(bodyGain);
+  bodyGain.connect(context.destination);
   oscillator.start(now);
-  oscillator.stop(now + 0.045);
+  body.start(now);
+  oscillator.stop(now + 0.074);
+  body.stop(now + 0.096);
 }
 
 export function playStopClack(): void {
@@ -84,4 +99,22 @@ function getAudioContext(): AudioContext {
     audioContext = new AudioContext();
   }
   return audioContext;
+}
+
+function playUnlockTap(): void {
+  if (muted) return;
+  const context = getAudioContext();
+  const now = context.currentTime;
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(520, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.035, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.06);
 }

@@ -96,6 +96,7 @@ h1 {
 }
 
 .icon-button,
+.utility-button,
 .mini-button,
 .test-button,
 .reset-reveal {
@@ -114,16 +115,48 @@ h1 {
   border-radius: 999px;
 }
 
+.utility-button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  place-items: center;
+  border-radius: 999px;
+  color: rgba(255, 248, 210, 0.42);
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 239, 168, 0.12);
+  box-shadow: none;
+  opacity: 0.48;
+}
+
+.utility-button:hover,
+.utility-button:focus-visible {
+  color: #fff8d2;
+  opacity: 1;
+}
+
+.data-drawer {
+  position: absolute;
+  top: 118px;
+  left: 36px;
+  z-index: 6;
+  width: min(680px, calc(100vw - 72px));
+}
+
+.data-drawer .control-panel {
+  width: 100%;
+  margin: 0;
+}
+
 .show-layout {
   display: grid;
-  grid-template-columns: 265px minmax(650px, 1fr) 220px;
+  grid-template-columns: minmax(760px, 1fr) 220px;
   gap: 28px;
   align-items: center;
   max-width: 1500px;
   margin: 0 auto;
 }
 
-.control-panel,
 .city-board {
   align-self: start;
   margin-top: 54px;
@@ -132,6 +165,15 @@ h1 {
   border-radius: 8px;
   background: rgba(30, 9, 34, 0.72);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(14px);
+}
+
+.control-panel {
+  padding: 18px;
+  border: 1px solid rgba(255, 239, 168, 0.28);
+  border-radius: 8px;
+  background: rgba(30, 9, 34, 0.9);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.09);
   backdrop-filter: blur(14px);
 }
 
@@ -358,6 +400,7 @@ h1 {
   inset: 28px 7px 0;
   content: '';
   clip-path: polygon(50% 100%, 0 0, 100% 0);
+  transform-origin: 50% 8%;
   background:
     linear-gradient(90deg, rgba(74, 24, 5, 0.35), transparent 28%, rgba(255, 255, 255, 0.35) 50%, transparent 70%, rgba(74, 24, 5, 0.35)),
     linear-gradient(135deg, #fff8bb 0%, #ffc83b 45%, #a84b0c 100%);
@@ -378,8 +421,8 @@ h1 {
   box-shadow: inset -5px -6px 10px rgba(66, 18, 4, 0.45), 0 0 18px rgba(255, 219, 105, 0.42);
 }
 
-.pointer-live {
-  animation: flapper 0.16s ease-in-out infinite alternate;
+.pointer-blade-tick {
+  animation: clickerSnap 0.16s cubic-bezier(0.2, 1.5, 0.35, 1);
 }
 
 .empty-wheel-copy {
@@ -571,12 +614,18 @@ h1 {
   }
 }
 
-@keyframes flapper {
-  from {
-    transform: translateX(-50%) rotate(-2deg);
+@keyframes clickerSnap {
+  0% {
+    transform: rotate(0deg);
   }
-  to {
-    transform: translateX(-50%) rotate(2deg);
+  28% {
+    transform: rotate(-11deg);
+  }
+  62% {
+    transform: rotate(5deg);
+  }
+  100% {
+    transform: rotate(0deg);
   }
 }
 

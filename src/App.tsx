@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Maximize, Volume2, VolumeX } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { Maximize, Settings, Volume2, VolumeX } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Confetti } from './components/Confetti';
 import { CsvImporter } from './components/CsvImporter';
 import { NameEntry } from './components/NameEntry';
@@ -27,6 +27,7 @@ function App() {
   const [error, setError] = useState('');
   const [reveal, setReveal] = useState<Reveal | null>(null);
   const [muted, setMuted] = useState(false);
+  const [dataOpen, setDataOpen] = useState(() => loadAssignments().length === 0);
 
   const slices = useMemo(
     () => buildCitySlices(assignments.length ? assignments.map((assignment) => assignment.city) : TEST_CITIES),
@@ -41,8 +42,23 @@ function App() {
     [name],
   );
 
-  const { rotation, spinState, spinToCity, resetRevealState } = useWheelSpin(slices, handleFinished);
+  const { rotation, spinState, clickerTick, spinToCity, resetRevealState } = useWheelSpin(slices, handleFinished);
   const isSpinning = spinState === 'spinning';
+
+  useEffect(() => {
+    const primeAudio = () => {
+      void unlockAudio();
+      window.removeEventListener('pointerdown', primeAudio);
+      window.removeEventListener('keydown', primeAudio);
+    };
+
+    window.addEventListener('pointerdown', primeAudio);
+    window.addEventListener('keydown', primeAudio);
+    return () => {
+      window.removeEventListener('pointerdown', primeAudio);
+      window.removeEventListener('keydown', primeAudio);
+    };
+  }, []);
 
   const handleImported = (nextAssignments: PersonAssignment[], nextWarnings: string[]) => {
     setAssignments(nextAssignments);
@@ -50,6 +66,7 @@ function App() {
     setWarnings(nextWarnings);
     setError('');
     setReveal(null);
+    setDataOpen(false);
   };
 
   const handleClear = () => {
@@ -58,6 +75,7 @@ function App() {
     setWarnings([]);
     setError('');
     setReveal(null);
+    setDataOpen(true);
   };
 
   const spin = async () => {
@@ -67,6 +85,7 @@ function App() {
 
     if (!assignments.length) {
       setError('Import a CSV first, or use Test for a visual spin.');
+      setDataOpen(true);
       return;
     }
 
@@ -114,6 +133,15 @@ function App() {
           <h1>City Fortune Wheel</h1>
         </div>
         <div className="top-actions">
+          <button
+            type="button"
+            className="utility-button"
+            onClick={() => setDataOpen((open) => !open)}
+            aria-label="Settings"
+            title="Settings"
+          >
+            <Settings size={15} />
+          </button>
           <button type="button" className="icon-button" onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
             {muted ? <VolumeX size={22} /> : <Volume2 size={22} />}
           </button>
@@ -123,16 +151,28 @@ function App() {
         </div>
       </header>
 
-      <div className="show-layout">
-        <CsvImporter assignments={assignments} warnings={warnings} onImported={handleImported} onClear={handleClear} />
+      <AnimatePresence>
+        {dataOpen && (
+          <motion.div
+            className="data-drawer"
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.22 }}
+          >
+            <CsvImporter assignments={assignments} warnings={warnings} onImported={handleImported} onClear={handleClear} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
+      <div className="show-layout">
         <section className="main-stage">
           <motion.div
             className="wheel-glow"
             animate={{ opacity: isSpinning ? 1 : 0.72, scale: isSpinning ? 1.04 : 1 }}
             transition={{ duration: 0.4 }}
           >
-            <Wheel slices={slices} rotation={rotation} spinState={spinState} />
+            <Wheel slices={slices} rotation={rotation} spinState={spinState} clickerTick={clickerTick} />
           </motion.div>
 
           <NameEntry

@@ -7,6 +7,7 @@ type UseWheelSpinResult = {
   rotation: number;
   spinState: SpinState;
   activePlan: SpinPlan | null;
+  clickerTick: number;
   spinToCity: (city: string) => Promise<void>;
   resetRevealState: () => void;
 };
@@ -17,9 +18,10 @@ export function useWheelSpin(slices: CitySlice[], onFinished: (city: string) => 
   const [rotation, setRotation] = useState(0);
   const [spinState, setSpinState] = useState<SpinState>('idle');
   const [activePlan, setActivePlan] = useState<SpinPlan | null>(null);
+  const [clickerTick, setClickerTick] = useState(0);
   const rotationRef = useRef(0);
   const rafRef = useRef<number | null>(null);
-  const lastTickSliceRef = useRef<number | null>(null);
+  const lastBoundaryCountRef = useRef(0);
 
   useEffect(() => {
     rotationRef.current = rotation;
@@ -59,9 +61,9 @@ export function useWheelSpin(slices: CitySlice[], onFinished: (city: string) => 
 
         setActivePlan(plan);
         setSpinState('spinning');
-        lastTickSliceRef.current = null;
         const startedAt = performance.now();
         const sliceSize = slices.length > 0 ? 360 / slices.length : 360;
+        lastBoundaryCountRef.current = 0;
 
         const animate = (time: number) => {
           const elapsed = time - startedAt;
@@ -71,11 +73,15 @@ export function useWheelSpin(slices: CitySlice[], onFinished: (city: string) => 
           rotationRef.current = nextRotation;
           setRotation(nextRotation);
 
-          const pointerWheelAngle = ((270 - nextRotation) % 360 + 360) % 360;
-          const tickSlice = Math.floor(pointerWheelAngle / sliceSize);
-          if (tickSlice !== lastTickSliceRef.current) {
-            lastTickSliceRef.current = tickSlice;
-            playTick(Math.max(0.25, 1 - progress * 0.65));
+          const boundaryCount = Math.floor(Math.abs(nextRotation - plan.fromRotation) / sliceSize);
+          if (boundaryCount > lastBoundaryCountRef.current) {
+            const crossedBoundaries = boundaryCount - lastBoundaryCountRef.current;
+            lastBoundaryCountRef.current = boundaryCount;
+            setClickerTick((tick) => tick + crossedBoundaries);
+            const ticksToPlay = Math.min(crossedBoundaries, 4);
+            for (let tickIndex = 0; tickIndex < ticksToPlay; tickIndex += 1) {
+              playTick(Math.max(0.42, 1 - progress * 0.52), tickIndex * 0.018);
+            }
           }
 
           if (progress < 1) {
@@ -99,5 +105,5 @@ export function useWheelSpin(slices: CitySlice[], onFinished: (city: string) => 
     [onFinished, slices, spinState],
   );
 
-  return { rotation, spinState, activePlan, spinToCity, resetRevealState };
+  return { rotation, spinState, activePlan, clickerTick, spinToCity, resetRevealState };
 }
