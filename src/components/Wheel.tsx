@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import type { CitySlice, SpinState } from '../types';
+import { formatCityLabel } from '../utils/wheelLabels';
 
 type WheelProps = {
   slices: CitySlice[];
@@ -150,20 +151,47 @@ function SlicePath({ slice }: { slice: CitySlice }) {
 
 function CityLabel({ slice, total }: { slice: CitySlice; total: number }) {
   const middleAngle = (slice.startAngle + slice.endAngle) / 2;
-  const point = polarToCartesian(CENTER, CENTER, total > 10 ? 142 : 132, middleAngle);
-  const fontSize = total > 12 ? 12 : total > 8 ? 14 : 17;
-  const label = slice.city.length > 15 ? `${slice.city.slice(0, 13)}...` : slice.city;
+  const lines = formatCityLabel(slice.city);
+  const point = polarToCartesian(CENTER, CENTER, total > 10 ? 151 : 138, middleAngle);
+  const fontSize = getLabelFontSize(total, lines);
+  const firstCityLineY = lines.length === 1 ? 9 : 5;
 
   return (
     <g transform={`rotate(${middleAngle + 90} ${point.x} ${point.y})`}>
-      <text x={point.x} y={point.y - 8} textAnchor="middle" dominantBaseline="middle" className="slice-kicker">
+      <text x={point.x} y={point.y - 13} textAnchor="middle" dominantBaseline="middle" className="slice-kicker">
         GROUP
       </text>
-      <text x={point.x} y={point.y + 9} textAnchor="middle" dominantBaseline="middle" className="slice-label" fontSize={fontSize}>
-        {label}
+      <text
+        x={point.x}
+        y={point.y + firstCityLineY}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        className="slice-label"
+        fontSize={fontSize}
+      >
+        {lines.map((line, index) => (
+          <tspan key={line} x={point.x} dy={index === 0 ? 0 : fontSize + 1}>
+            {line}
+          </tspan>
+        ))}
       </text>
     </g>
   );
+}
+
+function getLabelFontSize(total: number, lines: string[]): number {
+  const longestLine = Math.max(...lines.map((line) => line.length));
+  const baseSize = total > 12 ? 9.5 : total > 8 ? 11.5 : 15;
+
+  if (longestLine >= 10) {
+    return baseSize - 1.4;
+  }
+
+  if (longestLine >= 8) {
+    return baseSize - 0.7;
+  }
+
+  return baseSize;
 }
 
 function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
