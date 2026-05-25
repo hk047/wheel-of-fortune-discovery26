@@ -60,7 +60,7 @@ export function Wheel({ slices, rotation, spinState, clickerTick }: WheelProps) 
         <WheelVarnish />
         <WheelLabels slices={slices} />
         <WheelHub />
-        <WheelBulbs count={Math.max(slices.length, 16)} isSpinning={isSpinning} />
+        <WheelBulbs count={Math.max(slices.length * 2, 24)} isSpinning={isSpinning} />
       </motion.svg>
 
       {!hasSlices && <div className="empty-wheel-copy">Load CSV or try sample data</div>}
@@ -74,6 +74,7 @@ function WheelPointer({ clickerTick, spinState }: { clickerTick: number; spinSta
       <div className="pointer-shadow" />
       <div className="pointer-arm" />
       <div className="pointer-pin" />
+      <div className="pointer-pin-slot" />
       <div className="pointer-pin-shine" />
       <div key={clickerTick} className={`pointer-blade ${clickerTick > 0 ? 'pointer-blade-tick' : ''}`} />
     </div>
@@ -90,6 +91,24 @@ function WheelDefs({ slices }: { slices: CitySlice[] }) {
         <stop offset="72%" stopColor="#52200a" />
         <stop offset="100%" stopColor="#170709" />
       </radialGradient>
+      <radialGradient id="rimBlackChrome" cx="42%" cy="28%">
+        <stop offset="0%" stopColor="#4b2434" />
+        <stop offset="45%" stopColor="#160713" />
+        <stop offset="78%" stopColor="#050207" />
+        <stop offset="100%" stopColor="#000000" />
+      </radialGradient>
+      <linearGradient id="rimHotEdge" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0%" stopColor="#fff9d1" />
+        <stop offset="20%" stopColor="#f6c34a" />
+        <stop offset="46%" stopColor="#6d2608" />
+        <stop offset="64%" stopColor="#fff1a8" />
+        <stop offset="100%" stopColor="#3b1204" />
+      </linearGradient>
+      <radialGradient id="rimInsetCavity" cx="50%" cy="42%">
+        <stop offset="0%" stopColor="#3a1030" stopOpacity="0.22" />
+        <stop offset="70%" stopColor="#11040e" stopOpacity="0.76" />
+        <stop offset="100%" stopColor="#020102" stopOpacity="0.95" />
+      </radialGradient>
       <linearGradient id="rimGoldRail" x1="0" x2="1" y1="0" y2="1">
         <stop offset="0%" stopColor="#fff6b8" />
         <stop offset="18%" stopColor="#dfaa35" />
@@ -97,6 +116,12 @@ function WheelDefs({ slices }: { slices: CitySlice[] }) {
         <stop offset="58%" stopColor="#ffe48c" />
         <stop offset="82%" stopColor="#a55212" />
         <stop offset="100%" stopColor="#321006" />
+      </linearGradient>
+      <linearGradient id="sliceSheen" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.36" />
+        <stop offset="21%" stopColor="#ffffff" stopOpacity="0.1" />
+        <stop offset="54%" stopColor="#ffffff" stopOpacity="0" />
+        <stop offset="100%" stopColor="#000000" stopOpacity="0.16" />
       </linearGradient>
       <radialGradient id="hubGold" cx="34%" cy="24%">
         <stop offset="0%" stopColor="#fffbe5" />
@@ -109,6 +134,17 @@ function WheelDefs({ slices }: { slices: CitySlice[] }) {
         <stop offset="34%" stopColor="#7f3414" />
         <stop offset="100%" stopColor="#190713" />
       </radialGradient>
+      <radialGradient id="hubRubyGlass" cx="36%" cy="24%">
+        <stop offset="0%" stopColor="#fff1c7" stopOpacity="0.75" />
+        <stop offset="24%" stopColor="#e45645" />
+        <stop offset="68%" stopColor="#67102b" />
+        <stop offset="100%" stopColor="#14020c" />
+      </radialGradient>
+      <linearGradient id="hubGlassArc" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.7" />
+        <stop offset="45%" stopColor="#ffffff" stopOpacity="0.11" />
+        <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+      </linearGradient>
       <radialGradient id="sliceVignette" cx="44%" cy="24%">
         <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
         <stop offset="46%" stopColor="#ffffff" stopOpacity="0.02" />
@@ -119,6 +155,12 @@ function WheelDefs({ slices }: { slices: CitySlice[] }) {
         <stop offset="0%" stopColor="#ffffff" stopOpacity="0.58" />
         <stop offset="32%" stopColor="#ffffff" stopOpacity="0.16" />
         <stop offset="66%" stopColor="#ffffff" stopOpacity="0.03" />
+        <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+      </linearGradient>
+      <linearGradient id="spotlightReflection" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
+        <stop offset="44%" stopColor="#ffffff" stopOpacity="0.28" />
+        <stop offset="52%" stopColor="#fff7c7" stopOpacity="0.18" />
         <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
       </linearGradient>
       <linearGradient id="dividerMetal" x1="0" x2="1">
@@ -148,6 +190,9 @@ function WheelDefs({ slices }: { slices: CitySlice[] }) {
       <filter id="labelLift" x="-20%" y="-40%" width="140%" height="180%">
         <feDropShadow dx="0" dy="1.8" stdDeviation="1.2" floodColor="#000000" floodOpacity="0.78" />
       </filter>
+      <filter id="hubDepth" x="-35%" y="-35%" width="170%" height="170%">
+        <feDropShadow dx="0" dy="8" stdDeviation="6" floodColor="#000000" floodOpacity="0.52" />
+      </filter>
       {slices.map((slice) => {
         const stops = jewelToneStops[slice.index % jewelToneStops.length];
         return (
@@ -166,13 +211,15 @@ function WheelDefs({ slices }: { slices: CitySlice[] }) {
 function WheelRim() {
   return (
     <g className="wheel-rim" filter="url(#wheelRaisedShadow)">
-      <ellipse cx={CENTER} cy="281" rx="232" ry="214" fill="#050208" opacity="0.72" />
-      <circle cx={CENTER} cy={CENTER} r="247" fill="#130508" />
+      <ellipse cx={CENTER} cy="289" rx="238" ry="214" fill="#050208" opacity="0.82" />
+      <circle cx={CENTER} cy={CENTER} r="249" fill="url(#rimBlackChrome)" />
       <circle cx={CENTER} cy={CENTER} r="241" fill="url(#rimOuterMetal)" />
-      <circle cx={CENTER} cy={CENTER} r="229" fill="none" stroke="url(#rimGoldRail)" strokeWidth="11" />
-      <circle cx={CENTER} cy={CENTER} r="216" fill="#220b22" stroke="#10040d" strokeWidth="7" />
-      <circle cx={CENTER} cy={CENTER} r="210" fill="none" stroke="#fff0a8" strokeWidth="2.6" opacity="0.74" />
-      <circle cx={CENTER} cy={CENTER} r="196" fill="none" stroke="#0b0309" strokeWidth="6" opacity="0.22" />
+      <circle cx={CENTER} cy={CENTER} r="235" fill="none" stroke="url(#rimHotEdge)" strokeWidth="6" opacity="0.98" />
+      <circle cx={CENTER} cy={CENTER} r="226" fill="none" stroke="url(#rimGoldRail)" strokeWidth="13" />
+      <circle cx={CENTER} cy={CENTER} r="216" fill="url(#rimInsetCavity)" stroke="#10040d" strokeWidth="7" />
+      <circle cx={CENTER} cy={CENTER} r="210" fill="none" stroke="#fff4bc" strokeWidth="2.9" opacity="0.82" />
+      <circle cx={CENTER} cy={CENTER} r="201" fill="none" stroke="#24060f" strokeWidth="9" opacity="0.44" />
+      <circle cx={CENTER} cy={CENTER} r="193" fill="none" stroke="#fff1a7" strokeWidth="1.2" opacity="0.26" />
     </g>
   );
 }
@@ -199,6 +246,7 @@ function WheelSlice({ slice }: { slice: CitySlice }) {
   return (
     <g>
       <path d={path} fill={`url(#slice-${slice.index})`} stroke={wheelTheme.innerDivider} strokeWidth="1.4" className="wheel-slice" />
+      <path d={path} fill="url(#sliceSheen)" opacity="0.42" className="wheel-slice-sheen" />
       <line
         x1={innerSeparator.x}
         y1={innerSeparator.y}
@@ -225,15 +273,17 @@ function WheelVarnish() {
   return (
     <g pointerEvents="none">
       <circle cx={CENTER} cy={CENTER} r={SLICE_RADIUS} fill="url(#sliceVignette)" />
-      <path className="wheel-glass-highlight" d="M 91 106 C 164 34 302 27 405 102 C 317 78 204 81 108 137 Z" fill="url(#glassSweep)" />
+      <path className="wheel-glass-highlight" d="M 86 105 C 155 27 312 17 420 105 C 330 75 202 79 104 140 Z" fill="url(#glassSweep)" />
       <path
         className="wheel-gloss-band"
-        d="M 82 226 C 165 173 326 158 421 215 C 347 194 181 205 91 265 Z"
-        fill="#ffffff"
-        opacity="0.08"
+        d="M 67 216 C 168 158 341 150 438 211 C 349 194 188 203 74 273 Z"
+        fill="url(#spotlightReflection)"
+        opacity="0.42"
       />
-      <circle cx={CENTER} cy={CENTER} r="205" fill="none" stroke="#fff9cf" strokeWidth="2" opacity="0.42" />
-      <circle cx={CENTER} cy={CENTER} r="172" fill="none" stroke="#210815" strokeWidth="9" opacity="0.16" />
+      <path className="wheel-hot-reflection" d="M 162 71 C 238 42 327 50 390 92 C 316 82 229 85 164 112 Z" fill="#fff8d2" opacity="0.16" />
+      <circle cx={CENTER} cy={CENTER} r="205" fill="none" stroke="#fff9cf" strokeWidth="2.2" opacity="0.48" />
+      <circle cx={CENTER} cy={CENTER} r="176" fill="none" stroke="#210815" strokeWidth="12" opacity="0.18" />
+      <circle cx={CENTER} cy={CENTER} r="91" fill="none" stroke="#fff3ac" strokeWidth="1.4" opacity="0.22" />
     </g>
   );
 }
@@ -250,13 +300,16 @@ function WheelLabels({ slices }: { slices: CitySlice[] }) {
 
 function WheelHub() {
   return (
-    <g className="wheel-hub">
-      <circle cx={CENTER} cy={CENTER} r="86" fill="#160713" opacity="0.72" />
-      <circle cx={CENTER} cy={CENTER} r="78" fill="url(#hubGold)" stroke="#fff2a8" strokeWidth="4.5" />
-      <circle cx={CENTER} cy={CENTER} r="66" fill="#42140e" opacity="0.52" />
-      <circle cx={CENTER} cy={CENTER} r="60" fill="url(#hubInset)" stroke="#ffe58a" strokeWidth="2" opacity="0.94" />
-      <circle cx={CENTER - 19} cy={CENTER - 23} r="21" fill="#fff2b6" opacity="0.34" />
-      <circle cx={CENTER} cy={CENTER} r="43" fill="none" stroke="#180711" strokeWidth="12" opacity="0.16" />
+    <g className="wheel-hub" filter="url(#hubDepth)">
+      <circle cx={CENTER} cy={CENTER + 4} r="92" fill="#050207" opacity="0.48" />
+      <circle cx={CENTER} cy={CENTER} r="88" fill="url(#hubGold)" stroke="#fff2a8" strokeWidth="4.5" />
+      <circle cx={CENTER} cy={CENTER} r="76" fill="#250711" stroke="#5b2108" strokeWidth="5" opacity="0.96" />
+      <circle cx={CENTER} cy={CENTER} r="66" fill="url(#hubInset)" stroke="#ffe58a" strokeWidth="2.4" opacity="0.98" />
+      <circle cx={CENTER} cy={CENTER} r="57" fill="url(#hubRubyGlass)" opacity="0.86" />
+      <path d="M 204 229 C 225 205 278 202 302 231 C 274 220 228 221 204 239 Z" fill="url(#hubGlassArc)" opacity="0.78" />
+      <circle cx={CENTER - 20} cy={CENTER - 24} r="19" fill="#fff2b6" opacity="0.22" />
+      <circle cx={CENTER} cy={CENTER} r="43" fill="none" stroke="#180711" strokeWidth="12" opacity="0.15" />
+      <circle cx={CENTER} cy={CENTER} r="72" fill="none" stroke="#fff5ba" strokeWidth="1.2" opacity="0.46" />
       <text x={CENTER} y={CENTER - 5} textAnchor="middle" className="hub-text">
         GROUP
       </text>
@@ -272,13 +325,15 @@ function WheelBulbs({ count, isSpinning }: { count: number; isSpinning: boolean 
     <g className={isSpinning ? 'wheel-bulbs wheel-bulbs-spinning' : 'wheel-bulbs'}>
       {Array.from({ length: count }).map((_, index) => {
         const angle = (index / count) * 360;
-        const point = polarToCartesian(CENTER, CENTER, 236, angle);
-        const scale = index % 2 === 0 ? 1 : 0.86;
+        const point = polarToCartesian(CENTER, CENTER, 234, angle);
+        const scale = index % 2 === 0 ? 1 : 0.88;
         return (
           <g key={angle} className="wheel-bulb" filter="url(#bulbGlow)" style={{ animationDelay: `${index * 70}ms` }}>
-            <circle cx={point.x} cy={point.y} r={9.5 * scale} fill="#4c1d05" opacity="0.78" />
-            <circle cx={point.x} cy={point.y} r={6.8 * scale} fill="url(#bulbFace)" />
-            <circle cx={point.x - 2.2 * scale} cy={point.y - 2.5 * scale} r={2.1 * scale} fill="#fffce8" opacity="0.96" />
+            <circle cx={point.x} cy={point.y + 1.5 * scale} r={10.8 * scale} fill="#140603" opacity="0.62" />
+            <circle cx={point.x} cy={point.y} r={9.6 * scale} fill="#5b2607" opacity="0.9" />
+            <circle cx={point.x} cy={point.y} r={6.7 * scale} fill="url(#bulbFace)" />
+            <circle cx={point.x - 2.2 * scale} cy={point.y - 2.7 * scale} r={2.2 * scale} fill="#fffce8" opacity="0.96" />
+            <circle cx={point.x + 1.6 * scale} cy={point.y + 1.8 * scale} r={3.2 * scale} fill="#ff9f1f" opacity="0.14" />
           </g>
         );
       })}
@@ -295,6 +350,14 @@ function CityLabel({ slice, total }: { slice: CitySlice; total: number }) {
 
   return (
     <g transform={`rotate(${middleAngle + 90} ${point.x} ${point.y})`}>
+      <rect
+        x={point.x - 40}
+        y={point.y - 24}
+        width="80"
+        height={lines.length === 1 ? 42 : 52}
+        rx="8"
+        className="slice-label-plaque"
+      />
       <text x={point.x} y={point.y - 14} textAnchor="middle" dominantBaseline="middle" className="slice-kicker">
         GROUP
       </text>
