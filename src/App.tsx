@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Maximize, Settings, Volume2, VolumeX } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Maximize, Settings, Shuffle, Volume2, VolumeX } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Confetti } from './components/Confetti';
 import { CsvImporter } from './components/CsvImporter';
-import { NameEntry } from './components/NameEntry';
+import { NameDropTarget } from './components/NameDropTarget';
+import { NameRoster } from './components/NameRoster';
 import { RevealCard } from './components/RevealCard';
 import { Wheel } from './components/Wheel';
 import { useWheelSpin } from './hooks/useWheelSpin';
@@ -28,18 +29,19 @@ function App() {
   const [reveal, setReveal] = useState<Reveal | null>(null);
   const [muted, setMuted] = useState(false);
   const [dataOpen, setDataOpen] = useState(() => loadAssignments().length === 0);
+  const [draggingName, setDraggingName] = useState('');
+  const [spunNames, setSpunNames] = useState<Set<string>>(() => new Set());
+  const currentSpinNameRef = useRef('Guest');
 
   const slices = useMemo(
     () => buildCitySlices(assignments.length ? assignments.map((assignment) => assignment.city) : TEST_CITIES),
     [assignments],
   );
-  const knownNames = useMemo(() => assignments.map((assignment) => assignment.name), [assignments]);
-
   const handleFinished = useCallback(
     (city: string) => {
-      setReveal({ name: name.trim() || 'Guest', city });
+      setReveal({ name: currentSpinNameRef.current || 'Guest', city });
     },
-    [name],
+    [],
   );
 
   const { rotation, spinState, clickerTick, spinToCity, resetRevealState } = useWheelSpin(slices, handleFinished);
@@ -60,12 +62,29 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!draggingName) return;
+
+    const clearDraggingName = () => {
+      setDraggingName('');
+    };
+
+    window.addEventListener('pointerup', clearDraggingName);
+    window.addEventListener('pointercancel', clearDraggingName);
+    return () => {
+      window.removeEventListener('pointerup', clearDraggingName);
+      window.removeEventListener('pointercancel', clearDraggingName);
+    };
+  }, [draggingName]);
+
   const handleImported = (nextAssignments: PersonAssignment[], nextWarnings: string[]) => {
     setAssignments(nextAssignments);
     saveAssignments(nextAssignments);
     setWarnings(nextWarnings);
     setError('');
     setReveal(null);
+    setDraggingName('');
+    setSpunNames(new Set());
     setDataOpen(false);
   };
 
@@ -75,27 +94,31 @@ function App() {
     setWarnings([]);
     setError('');
     setReveal(null);
+    setSpunNames(new Set());
     setDataOpen(true);
   };
 
-  const spin = async () => {
+  const spinName = async (personName: string) => {
     await unlockAudio();
     setReveal(null);
     setError('');
 
     if (!assignments.length) {
-      setError('Import a CSV first, or use Test for a visual spin.');
+      setError('Import a CSV first, then drag a participant into the wheel.');
       setDataOpen(true);
       return;
     }
 
-    const assignment = findAssignment(assignments, name);
+    const assignment = findAssignment(assignments, personName);
     if (!assignment) {
       setError('No city found for this name. Check the spelling or import an updated CSV.');
       return;
     }
 
+    currentSpinNameRef.current = assignment.name;
+    setName(assignment.name);
     await spinToCity(assignment.city);
+    setSpunNames((previous) => new Set(previous).add(assignment.normalizedName));
   };
 
   const testSpin = async () => {
@@ -104,8 +127,9 @@ function App() {
     setError('');
     const cities = slices.map((slice) => slice.city);
     const city = cities[Math.floor(Math.random() * cities.length)] ?? 'Paris';
+    currentSpinNameRef.current = 'Test spin';
+    setName('Test spin');
     await spinToCity(city);
-    setReveal({ name: 'Test spin', city });
   };
 
   const toggleMute = () => {
@@ -129,8 +153,8 @@ function App() {
 
       <header className="top-bar">
         <div>
-          <p className="eyebrow">Discovery City Draw</p>
-          <h1>City Fortune Wheel</h1>
+          <p className="eyebrow">Discovery Group Draw</p>
+          <h1>Wheel of Facilitators</h1>
         </div>
         <div className="top-actions">
           <button
@@ -173,25 +197,37 @@ function App() {
             transition={{ duration: 0.4 }}
           >
             <Wheel slices={slices} rotation={rotation} spinState={spinState} clickerTick={clickerTick} />
-          </motion.div>
 
-          <NameEntry
-            value={name}
-            knownNames={knownNames}
-            disabled={isSpinning}
-            canSpin={name.trim().length > 0}
-            error={error}
-            onChange={setName}
-            onSpin={() => void spin()}
-            onTestSpin={() => void testSpin()}
-          />
+            <NameDropTarget
+              selectedName={name}
+              draggingName={draggingName}
+              disabled={isSpinning}
+              error={error}
+              onNameDropped={(droppedName) => void spinName(droppedName)}
+            />
+          </motion.div>
         </section>
 
-        <aside className="city-board">
-          <span>Cities on Wheel</span>
-          <div>
-            {assignments.length ? slices.map((slice) => <b key={slice.city}>{slice.city}</b>) : <b>Sample test cities</b>}
-          </div>
+        <aside className="side-board">
+          <NameRoster
+            assignments={assignments}
+            disabled={isSpinning}
+            spunNames={spunNames}
+            onChooseName={(chosenName) => void spinName(chosenName)}
+            onDragBegin={setDraggingName}
+          />
+
+          <section className="city-board">
+            <span>Cities on Wheel</span>
+            <div>
+              {assignments.length ? slices.map((slice) => <b key={slice.city}>{slice.city}</b>) : <b>Sample test cities</b>}
+            </div>
+          </section>
+
+          <button className="test-button side-test-button" type="button" disabled={isSpinning} onClick={() => void testSpin()}>
+            <Shuffle size={18} />
+            Test
+          </button>
         </aside>
       </div>
 
