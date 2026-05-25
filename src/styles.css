@@ -404,12 +404,6 @@ h1 {
   mix-blend-mode: screen;
 }
 
-.slice-label-plaque {
-  fill: rgba(19, 4, 13, 0.18);
-  stroke: rgba(255, 242, 184, 0.18);
-  stroke-width: 0.8px;
-}
-
 .slice-kicker,
 .slice-label {
   fill: #fffdf2;

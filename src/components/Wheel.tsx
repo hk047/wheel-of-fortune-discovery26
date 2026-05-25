@@ -350,14 +350,6 @@ function CityLabel({ slice, total }: { slice: CitySlice; total: number }) {
 
   return (
     <g transform={`rotate(${middleAngle + 90} ${point.x} ${point.y})`}>
-      <rect
-        x={point.x - 40}
-        y={point.y - 24}
-        width="80"
-        height={lines.length === 1 ? 42 : 52}
-        rx="8"
-        className="slice-label-plaque"
-      />
       <text x={point.x} y={point.y - 14} textAnchor="middle" dominantBaseline="middle" className="slice-kicker">
         GROUP
       </text>
